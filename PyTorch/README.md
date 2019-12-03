@@ -1,92 +1,107 @@
-# Text to Image Synthesis using Skip-thought Vectors
+# Text-to-Image-Synthesis 
 
-## Description
-This is a PyTorch implementation of the paper Generative Adversarial Text-to-Image Synthesis [http://arxiv.org/abs/1605.05396] using skip thought vectors for caption embedding. This implementation is based on DCGAN. Below is the model architecture where blue bars represent skip thought vector for the captions.
+## Intoduction
 
-[Figure]
-Image Source : Paper
+This is a pytorch implementation of [Generative Adversarial Text-to-Image Synthesis paper](https://arxiv.org/abs/1605.05396), we train a conditional generative adversarial network, conditioned on text descriptions, to generate images that correspond to the description. The network architecture is shown below (Image from [1]). This architecture is based on DCGAN.
 
-## Setup and Installments
-  * Python==3.6.6
-  * PyTorch==0.4.0
-  * TorchVision==0.2.1
-  * Theano
-  * NLTK
-  * tqdm
+<figure><img src='images/pipeline.png'></figure>
+Image credits [1]
 
-## Dataset
-  * This model has been trained on the flowers dataset. Download flower dataset from here[] and save the images in Data folder as Data/flowers.
-  * Now download the corresponding captions from here[]. After extracting, copy the text_c10 folder and paste it in Data folder as Data/text_c10.
+## Requirements
 
-## Skip-Thought Model
-  * Download the pretrained models and vocabulary for skip thought vectors as per the instructions given below. Save the downloaded files in Data/skipthoughts.
+- pytorch 
+- visdom
+- h5py
+- PIL
+- numpy
 
-  * Some of the files are quite large(>2GB). So make sure there is enough space available.
+This implementation currently only support running with GPUs.
 
-  * Run below code to download skip thought model and all other required files
-  python download_skipthought.py
+## Implementation details
 
+This implementation follows the Generative Adversarial Text-to-Image Synthesis paper [1], however it works more on training stablization and preventing mode collapses by implementing:
+- Feature matching [2]
+- One sided label smoothing [2]
+- minibatch discrimination [2] (implemented but not used)
+- WGAN [3]
+- WGAN-GP [4] (implemented but not used)
 
+## Datasets
+
+We used [Caltech-UCSD Birds 200](http://www.vision.caltech.edu/visipedia/CUB-200.html) and [Flowers](http://www.robots.ox.ac.uk/~vgg/data/flowers/102/) datasets, we converted each dataset (images, text embeddings) to hd5 format. 
+
+We used the [text embeddings](https://github.com/reedscot/icml2016) provided by the paper authors
+
+**To use this code you can either:**
+
+- Use the converted hd5 datasets,  [birds](https://drive.google.com/open?id=1mNhn6MYpBb-JwE86GC1kk0VJsYj-Pn5j), [flowers](https://drive.google.com/open?id=1EgnaTrlHGaqK5CCgHKLclZMT_AMSTyh8)
+- Convert the data youself
+  1. download the dataset as described [here](https://github.com/reedscot/cvpr2016)
+  2. Add the paths to the dataset to `config.yaml` file.
+  3. Use [convert_cub_to_hd5_script](convert_cub_to_hd5_script.py) or [convert_flowers_to_hd5_script](convert_flowers_to_hd5_script.py) script to convert the dataset.
+  
+**Hd5 file taxonomy**
+`
+ - split (train | valid | test )
+    - example_name
+      - 'name'
+      - 'img'
+      - 'embeddings'
+      - 'class'
+      - 'txt'
+      
 ## Usage
-  * Data Pre-processing :
-  ```shell
-  $ python data_loader.py
-  ```
+### Training
 
-  * Training Arguments:
-     ```shell
-     dataset : Dataset used. Default = flowers
-     batch_size : Batch Size. Default = 1
-     num_epochs : NUmber of epochs to train. Default = 200
-     img_size : Size of the image. Default = 64
-     z_dim : Latent variable dimension. Default = 100
-     text_embedding_dim : Embedding dim of caption. Default = 4800
-     reduced_text_dim : Reduced embedding dim of caption. Default = 1024
-     learning_rate : Learning Rate. Default = 0.0002
-     beta1 : Hyperparameter of the Adam optimizer. Default = 0.5
-     beta2 : Hyperparameter of the Adam optimizer. Default = 0.999
-     l1_coeff : Coefficient for the L1 Loss. Default = 50
-     resume_epoch : Resume epoch to resume training. Default = 1
-     ```
-  * Train the model by running below code
-     ```shell
-      $ python main.py
-     ```
-  * Testing model by giving custom input text
-     ```shell
-  	  $ python predict.py --text="Input caption to be used to generate the image"
-     ```
-  	The generated image will be save to text directory inside Data folder as Data/Testing 
+`python runtime.py
 
-## Model key-points
+**Arguments:**
+- `type` : GAN archiecture to use `(gan | wgan | vanilla_gan | vanilla_wgan)`. default = `gan`. Vanilla mean not conditional
+- `dataset`: Dataset to use `(birds | flowers)`. default = `flowers`
+- `split` : An integer indicating which split to use `(0 : train | 1: valid | 2: test)`. default = `0`
+- `lr` : The learning rate. default = `0.0002`
+- `diter` :  Only for WGAN, number of iteration for discriminator for each iteration of the generator. default = `5`
+- `vis_screen` : The visdom env name for visualization. default = `gan`
+- `save_path` : Path for saving the models.
+- `l1_coef` : L1 loss coefficient in the generator loss fucntion for gan and vanilla_gan. default=`50`
+- `l2_coef` : Feature matching coefficient in the generator loss fucntion for gan and vanilla_gan. default=`100`
+- `pre_trained_disc` : Discriminator pre-tranined model path used for intializing training.
+- `pre_trained_gen` Generator pre-tranined model path used for intializing training.
+- `batch_size`: Batch size. default= `64`
+- `num_workers`: Number of dataloader workers used for fetching data. default = `8`
+- `epochs` : Number of training epochs. default=`200`
+- `cls`: Boolean flag to whether train with cls algorithms or not. default=`False`
 
-  * Skip Thought is an efficient model used for sentence embedding and is based on the concept of word
-  embedding (word2vec or Glove). It returns a numpy array of dimension 4800 in which the first 2400
-  dimensions is the uni-skip model and the last 2400 dimensions is the bi-skip model. We use the combine
-  -skip vectors as experimentally, they perform the best.
 
-  * Text2Image model is a Generarive Adversarial Network based model which is built on top of the DCGAN.
-  It consists of a Discriminator network and a Generator network.
+## Results
 
-  * Discriminator network not only classifies the images generated by the generate as a fake image but also those real images which do not correspond to the correct caption. In short, fake examples are categorized by following :
-  Fake Image + Correct Caption
-  False Image(Real Image) + Incorrect Caption
+### Generated Images
 
-  * Images are 64 x 64 in dimension
+<p align='center'>
+<img src='images/64_flowers.jpeg'>
+</p>
 
-## Generated Images
-Following are some of the images generated by this model
-[A table of few 5-6 images along with their captions]
-
-## TODO
-Implementation of the same using an autoencoder for sentence embedding
+## Text to image synthesis
+| Text        | Generated Images  |
+| ------------- | -----:|
+| A blood colored pistil collects together with a group of long yellow stamens around the outside        | <img src='images/examples/a blood colored pistil collects together with a group of long yellow stamens around the outside whic.jpg'>  |
+| The petals of the flower are narrow and extremely pointy, and consist of shades of yellow, blue      | <img src='images/examples/the petals of the flower are narrow and extremely pointy, and consist of shades of yellow, blue and .jpg'>  |
+| This pale peach flower has a double row of long thin petals with a large brown center and coarse loo | <img src='images/examples/this pale peach flower has a double row of long thin petals with a large brown center and coarse loo.jpg'> |
+| The flower is pink with petals that are soft, and separately arranged around the stamens that has pi | <img src='images/examples/the flower is pink with petals that are soft, and separately arranged around the stamens that has pi.jpg'> |
+| A one petal flower that is white with a cluster of yellow anther filaments in the center | <img src='images/examples/a one petal flower that is white with a cluster of yellow anther filaments in the center.jpg'> |
 
 
 ## References
-  * Generative Adversarial Text-to-Image Synthesis - http://arxiv.org/abs/1605.05396
-  * Tensorflow implementation - https://github.com/paarthneekhara/text-to-image
-  * Skip-Thought Model - https://github.com/ryankiros/skip-thoughts
+[1]  Generative Adversarial Text-to-Image Synthesis https://arxiv.org/abs/1605.05396
+
+[2]  Improved Techniques for Training GANs https://arxiv.org/abs/1606.03498
+
+[3]  Wasserstein GAN https://arxiv.org/abs/1701.07875
+
+[4] Improved Training of Wasserstein GANs https://arxiv.org/pdf/1704.00028.pdf
 
 
-## License
-MIT
+## Other Implementations
+
+1. https://github.com/reedscot/icml2016 (the authors version)
+2. https://github.com/paarthneekhara/text-to-image (tensorflow)
