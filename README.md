@@ -2,6 +2,8 @@
 
 This repository includes PyTorch and Tensorflow implementations of Generative Adversarial Text-to-Image Synthesis used for the final project for Artificial Neural Computation.
 
+### Instructions to run found in either folder
+
 ## Requirements
 ### PyTorch
 	* Python==3.6
@@ -11,14 +13,15 @@ This repository includes PyTorch and Tensorflow implementations of Generative Ad
 	* NLTK
 	* tqdm
 ### Tensorflow
-	* Python==3.6
-	* Tensorflow==1.4
-	* Scipy
-	* Numpy
-	* Pillow
-	* Easydict
-	* imageio
-	* pyyaml
+	- python==3.7.3
+    - tensorflow==1.14
+    - scipy==1.2.0
+    - numpy==1.16.4
+    - pillow==6.1.0
+    - easydict==1.9
+    - imageio==2.4.1
+    - imageio-ffmpeg==0.3.0
+    - pyyaml==5.1.2
 
 ## Acknowledgements
 	* PyTorch implementation is adopted heavily from https://github.com/aelnouby/Text-to-Image-Synthesis
